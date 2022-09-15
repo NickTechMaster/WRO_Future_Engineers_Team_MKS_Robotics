@@ -1,68 +1,10 @@
 
-from xml.dom.pulldom import END_DOCUMENT
 import RPi.GPIO as GPIO
 import time
 import cv2
 import numpy as np
 import threading
-
-
-
 from gpiozero import Button
-
-
-
-counter_start = False
-
-def counter():
-    global blue_counter
-    global counter_start
-    global exit_program
-    while True:
-        if counter_start == True:
-            blue_counter = False
-            time.sleep(3)
-            blue_counter = True
-            counter_start = False
-        if counter_start == "Ende":
-            time.sleep(4)
-            pins = { 19:GPIO.HIGH, 5:GPIO.HIGH, 6:GPIO.HIGH, 13:GPIO.HIGH }
-            for p in list(pins.keys()):
-                GPIO.output(p, pins[p])
-            exit_program = False
-            exit()
-
-
-
-
-
-
-thread_counter = threading.Thread(target=counter, args = ())
-
-
-global blue_counter 
-global end_counter 
-global exit_program
-
-
-exit_program = True
-end_counter = 0
-vid = cv2.VideoCapture(0) 
-time.sleep(12)
-thread_counter.start()
-
-
-
-
-lower_blue = np.array([90, 100, 20])
-upper_blue = np.array([130, 250, 255])
-
-
-
-
-blue_counter = True
-
-
 
 
 
@@ -98,6 +40,76 @@ GPIO.setup(12, GPIO.IN)
 
 GPIO.setup(1, GPIO.OUT)
 GPIO.setup(0, GPIO.IN)
+
+counter_start = False
+button = Button(9)
+
+def counter():
+    global blue_counter
+    global counter_start
+    global exit_program
+    global counter_ende
+    while True:
+        if counter_ende == "Ende":
+                time.sleep(1.5)
+                print("hi")
+                pins = { 19:GPIO.HIGH, 5:GPIO.HIGH, 6:GPIO.HIGH, 13:GPIO.HIGH }
+                for p in list(pins.keys()):
+                    GPIO.output(p, pins[p])
+                exit_program = False
+                exit()
+        elif counter_start == True:
+            blue_counter = False
+            time.sleep(2)
+            blue_counter = True
+            counter_start = False
+       
+
+
+
+
+thread_counter = threading.Thread(target=counter, args = ())
+
+
+
+
+global blue_counter 
+global end_counter 
+global exit_program
+global counter_ende
+counter_ende = False
+
+exit_program = True
+end_counter = 0
+vid = cv2.VideoCapture(0) 
+time.sleep(3)
+pins = { 19:GPIO.HIGH, 5:GPIO.HIGH, 6:GPIO.HIGH, 13:GPIO.HIGH }
+for p in list(pins.keys()):
+    GPIO.output(p, pins[p])
+print("start")
+button.wait_for_press()
+print("start_2")
+thread_counter.start()
+#thread_end_counter.start()
+
+
+
+
+lower_blue = np.array([90, 100, 20])
+upper_blue = np.array([130, 250, 255])
+
+
+
+
+blue_counter = True
+
+
+
+
+
+
+
+
 
 
 
@@ -160,19 +172,19 @@ def motor(mode, speed):
 
 motor("forward", 100)
 while exit_program == True:
-
-    if end_counter == 12:
-        counter_start = "Ende"
-
+    if end_counter >= 12:
+        counter_ende = "Ende"
 
 
 
-    rechts = ultraschall(1) 
 
-    links = ultraschall(0)
 
-        
-    servo.start(5)
+    rechts = ultraschall(0) 
+
+    links = ultraschall(2)
+
+
+
 
     if links < 450 and rechts < 450:
 
@@ -193,7 +205,8 @@ while exit_program == True:
             servo.start(7 + lenkung * 0.018)
             #print("rechts" + str(lenkung))
             #time.sleep(0.1)
-        time.sleep(0.2)
+        time.sleep(0.1)
+
 
 
 
@@ -225,6 +238,8 @@ while exit_program == True:
                     end_counter = end_counter + 1
                     print("blue")
                     counter_start = True
+        
+
 
 
 
