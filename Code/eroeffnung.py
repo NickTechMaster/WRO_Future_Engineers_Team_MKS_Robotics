@@ -1,4 +1,4 @@
-
+#Bibiliotheken importieren
 import RPi.GPIO as GPIO
 import time
 import cv2
@@ -7,9 +7,7 @@ import threading
 from gpiozero import Button
 
 
-
-
-
+#GPIO Pins festlegen
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
@@ -41,9 +39,11 @@ GPIO.setup(12, GPIO.IN)
 GPIO.setup(1, GPIO.OUT)
 GPIO.setup(0, GPIO.IN)
 
+
 counter_start = False
 button = Button(9)
 
+#Zähler für Ende und blockade für eine gewisse Zeit für blau erkennen
 def counter():
     global blue_counter
     global counter_start
@@ -52,7 +52,6 @@ def counter():
     while True:
         if counter_ende == "Ende":
                 time.sleep(1.5)
-                print("hi")
                 pins = { 19:GPIO.HIGH, 5:GPIO.HIGH, 6:GPIO.HIGH, 13:GPIO.HIGH }
                 for p in list(pins.keys()):
                     GPIO.output(p, pins[p])
@@ -65,12 +64,8 @@ def counter():
             counter_start = False
        
 
-
-
-
+#zähler starten
 thread_counter = threading.Thread(target=counter, args = ())
-
-
 
 
 global blue_counter 
@@ -90,29 +85,17 @@ print("start")
 button.wait_for_press()
 print("start_2")
 thread_counter.start()
-#thread_end_counter.start()
 
 
-
-
+#farbbereich von blau definieren
 lower_blue = np.array([90, 100, 20])
 upper_blue = np.array([130, 250, 255])
-
-
 
 
 blue_counter = True
 
 
-
-
-
-
-
-
-
-
-
+#Ultraschall Sensoren ansteuern
 def ultraschall(mode):
 
     if mode == 0:
@@ -125,7 +108,6 @@ def ultraschall(mode):
         GPIO_TRIGGER = 1
         GPIO_ECHO = 0
     distanz_all = 0
-    #print("u_2")
     GPIO.output(GPIO_TRIGGER, True)
 
     time.sleep(0.00001)
@@ -140,16 +122,13 @@ def ultraschall(mode):
     while GPIO.input(GPIO_ECHO) == 1:
         StopZeit = time.time()
 
-    #print("u_3")
     TimeElapsed = StopZeit - StartZeit
     distanz = (TimeElapsed * 34300) / 2
 
-
-    #print("distanz_all: " + str(distanz_all))
-    #print("u_4")
     return(round(distanz))
 
 
+#Motor ansteuern
 def motor(mode, speed):
     if mode == "stop":
         pins = { 19:GPIO.HIGH, 5:GPIO.HIGH, 6:GPIO.HIGH, 13:GPIO.HIGH }
@@ -172,20 +151,19 @@ def motor(mode, speed):
 
 motor("forward", 100)
 while exit_program == True:
+    #startet end zähler nach 12 blau erkannten linien
     if end_counter >= 12:
         counter_ende = "Ende"
 
 
-
-
-
+    #Ultraschall Sensoren definieren
     rechts = ultraschall(0) 
 
     links = ultraschall(2)
 
 
 
-
+    #lenkung ausrechnen
     if links < 450 and rechts < 450:
 
         mittelpunkt = (links + rechts) / 2
@@ -193,40 +171,33 @@ while exit_program == True:
         #links
         if links <= rechts:
             lenkung = round(100 - (100 * links / mittelpunkt))
-            #print("links" + str(lenkung))
-            servo.start(7 - lenkung * 0.018)
-            #time.sleep(0.1)
+
+            servo.start(7 - lenkung * 0.017)
+
 
 
         #rechts
 
         elif rechts <= links:
             lenkung = round(100 - (100 * rechts / mittelpunkt))
-            servo.start(7 + lenkung * 0.018)
-            #print("rechts" + str(lenkung))
-            #time.sleep(0.1)
-        time.sleep(0.1)
-
-
-
-
+            servo.start(7 + lenkung * 0.017)
 
 
     area = 0
     area_green = 0
     area_red = 0
 
+    #bild aufnehmen und häller machen
     ret, frame = vid.read()
 
-    #frame = cv2.imread('IMG_8535.JPG')
     Intensity_Matrix=np.ones(frame.shape, dtype = "uint8") * 100
 
     frame = cv2.add(frame, Intensity_Matrix)
     height, width = frame.shape[:2]
 
-
     image = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         
+    #überprüfen ob blau erkannt wird
     mask_green = cv2.inRange (image, lower_blue, upper_blue)
     contours_green, hierarchy = cv2.findContours(mask_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  
 
@@ -240,12 +211,7 @@ while exit_program == True:
                     counter_start = True
         
 
-
-
-
-
-
-
+    #motor stoppen wenn programm manuel beendet wird
     try:
         pass
     except KeyboardInterrupt:
